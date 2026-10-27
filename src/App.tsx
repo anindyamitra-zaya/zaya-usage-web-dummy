@@ -2,12 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MobileBottomNav } from './components/MobileBottomNav';
-import { LiveSyncBar } from './components/LiveSyncBar';
 import { OverviewView } from './components/OverviewView';
 import { ReconciliationView } from './components/ReconciliationView';
 import { CallLogsView } from './components/CallLogsView';
 import { BillingView } from './components/BillingView';
 import { CallDetailModal } from './components/CallDetailModal';
+import { BudgetConfig } from './components/BudgetAlertCard';
 import {
   ActiveTab,
   TelnyxCall,
@@ -19,6 +19,7 @@ import {
   ALL_TELNYX_CALLS,
   getTelnyxMetrics,
 } from './services/telnyxData';
+import { formatTimeInTimezone } from './utils/dashboardHelpers';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -26,11 +27,25 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [selectedCall, setSelectedCall] = useState<TelnyxCall | null>(null);
 
+  // Timezone state (default UTC, selectable at bottom of sidebar)
+  const [timezone, setTimezone] = useState<string>('UTC');
+
+  // Sidebar collapsible state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Configurable Budget Alert state
+  const [budgetConfig, setBudgetConfig] = useState<BudgetConfig>({
+    monthlyBudget: 15.00,
+    warningThresholdPct: 80,
+    alertEmail: 'admin@zayahealth.ai',
+    enableAlerts: true,
+  });
+
   // Live Sync Engine (5 minutes configurable interval)
   const [syncConfig, setSyncConfig] = useState<SyncConfig>({
     intervalMinutes: 5,
     autoSyncEnabled: true,
-    lastSyncAt: new Date().toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC',
+    lastSyncAt: `${formatTimeInTimezone(new Date(), 'UTC')} UTC`,
     nextSyncSeconds: 300,
     isSyncing: false,
     syncRunCount: 1,
@@ -65,11 +80,12 @@ export default function App() {
     }
 
     setTimeout(() => {
-      const nowUtc = new Date().toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC';
+      const tzLabel = timezone === 'UTC' ? 'UTC' : timezone.split('/')[1]?.replace('_', ' ') || timezone;
+      const formattedTime = `${formatTimeInTimezone(new Date(), timezone)} ${tzLabel}`;
       setSyncConfig((prev) => ({
         ...prev,
         isSyncing: false,
-        lastSyncAt: nowUtc,
+        lastSyncAt: formattedTime,
         nextSyncSeconds: prev.intervalMinutes * 60,
         syncRunCount: prev.syncRunCount + 1,
         lastSyncStats: {
@@ -79,7 +95,7 @@ export default function App() {
         },
       }));
     }, 700);
-  }, [selectedMonth, selectedAssistantId]);
+  }, [selectedMonth, selectedAssistantId, timezone]);
 
   // Live timer countdown effect
   useEffect(() => {
@@ -120,7 +136,14 @@ export default function App() {
     }));
   };
 
-  const hasDiscrepancy = Math.abs(metrics.discrepancy.delta) > 0.0001;
+  const handleTimezoneChange = (newTz: string) => {
+    setTimezone(newTz);
+    const tzLabel = newTz === 'UTC' ? 'UTC' : newTz.split('/')[1]?.replace('_', ' ') || newTz;
+    setSyncConfig((prev) => ({
+      ...prev,
+      lastSyncAt: `${formatTimeInTimezone(new Date(), newTz)} ${tzLabel}`,
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-[#fbf9f4] text-[#2e1d1a] flex flex-col font-sans selection:bg-[#8b372b]/20 selection:text-[#3b110c]">
@@ -135,26 +158,26 @@ export default function App() {
         totalCalls={metrics.kpis.call_count}
       />
 
-      {/* Main Workspace: Sidebar + Viewport */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto">
-        {/* Desktop Sidebar */}
+      {/* Main Workspace: Fixed & Collapsible Sidebar + Compact Viewport */}
+      <div className="flex-1 flex max-w-7xl w-full mx-auto relative">
+        {/* Fixed, Non-Scrollable, Collapsible Sidebar with Live Sync and Timezone at Bottom */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
           metrics={metrics}
           totalCallsCount={metrics.kpis.call_count}
+          syncConfig={syncConfig}
+          onManualSync={executeSync}
+          onUpdateInterval={handleUpdateInterval}
+          onToggleAutoSync={handleToggleAutoSync}
+          timezone={timezone}
+          onSelectTimezone={handleTimezoneChange}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
 
-        {/* Main Content Viewport */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 md:pb-8 overflow-y-auto max-w-full space-y-5">
-          {/* Live Sync Bar */}
-          <LiveSyncBar
-            syncConfig={syncConfig}
-            onManualSync={executeSync}
-            onUpdateInterval={handleUpdateInterval}
-            onToggleAutoSync={handleToggleAutoSync}
-          />
-
+        {/* Main Content Viewport (Compact layout, no scroll in sidebar) */}
+        <main className="flex-1 p-3 sm:p-5 pb-20 md:pb-6 overflow-y-auto max-w-full space-y-4">
           {/* Active Tab View */}
           {activeTab === 'overview' && (
             <OverviewView
@@ -164,6 +187,9 @@ export default function App() {
               selectedAssistant={selectedAssistant}
               onSelectCall={setSelectedCall}
               onNavigateTab={setActiveTab}
+              timezone={timezone}
+              budgetConfig={budgetConfig}
+              onUpdateBudgetConfig={setBudgetConfig}
             />
           )}
 
@@ -180,6 +206,7 @@ export default function App() {
               calls={ALL_TELNYX_CALLS}
               onSelectCall={setSelectedCall}
               selectedAssistantId={selectedAssistantId}
+              timezone={timezone}
             />
           )}
 
@@ -198,10 +225,10 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         ratePerMin={metrics.kpis.blended_cost_per_minute || 0.0780}
-        hasDiscrepancy={hasDiscrepancy}
+        hasDiscrepancy={Math.abs(metrics.discrepancy.delta) > 0.0001}
       />
 
-      {/* Deep-Dive Call Detail Modal (NO audio inspection) */}
+      {/* Call Detail Modal */}
       <CallDetailModal
         call={selectedCall}
         onClose={() => setSelectedCall(null)}

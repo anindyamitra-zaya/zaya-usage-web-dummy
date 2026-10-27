@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Scale,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
   Layers,
-  FileSpreadsheet,
+  ChevronDown,
+  ChevronUp,
   Info,
+  CheckCircle,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { ReconciliationRow, DiscrepancyAnalysis } from '../types';
 import { DiscrepancyCard } from './DiscrepancyCard';
@@ -22,79 +22,135 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
   discrepancy,
   selectedAssistantName,
 }) => {
+  // By default hide analysis as requested
+  const [showAuditAnalysis, setShowAuditAnalysis] = useState(false);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#e7decb]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[#e7decb]">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#3b110c] flex items-center gap-2">
-            <Scale className="w-6 h-6 text-[#8b372b]" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#3b110c] bg-[#f8eed2] px-1.5 py-0.2 rounded border border-[#e2d7c3] font-bold">
+              CDR Audit Ledger
+            </span>
+            <span className="text-xs text-[#5d3d3a] font-mono">
+              Telnyx API Account Tie-Out
+            </span>
+          </div>
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[#3b110c] flex items-center gap-2">
+            <Scale className="w-5 h-5 text-[#8b372b]" />
             Telnyx Account & CDR Cost Reconciliation
           </h2>
-          <p className="text-xs sm:text-sm text-[#5d3d3a] mt-0.5">
-            Compare account-wide Telnyx usage reports with locally aggregated call CDR charges to audit discrepancies.
+          <p className="text-xs text-[#5d3d3a]">
+            Auditing variance between account-wide Telnyx reports and aggregated call CDR line-items.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-[#5d3d3a] font-semibold">
-          <span>Account Level: UTC Month</span>
-        </div>
+        <button
+          onClick={() => setShowAuditAnalysis(!showAuditAnalysis)}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#faf8f2] hover:bg-[#f3eedf] text-[#3b110c] border border-[#dcd3c1] transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
+        >
+          <Info className="w-3.5 h-3.5 text-[#8b372b]" />
+          <span>{showAuditAnalysis ? 'Hide Audit Methodology' : 'Show Audit Methodology'}</span>
+          {showAuditAnalysis ? <ChevronUp className="w-3 h-3 text-[#5d3d3a]" /> : <ChevronDown className="w-3 h-3 text-[#5d3d3a]" />}
+        </button>
       </div>
 
-      {/* Hero Discrepancy Component */}
+      {/* Discrepancy Component (analysis hidden by default) */}
       <DiscrepancyCard
         discrepancy={discrepancy}
         selectedAssistantName={selectedAssistantName}
       />
 
-      {/* Reconciliation Table */}
-      <div className="p-4 sm:p-5 rounded-xl bg-[#ffffff] border border-[#e7decb] space-y-4 shadow-xs">
+      {/* Audit Methodology Drawer (Hidden by default) */}
+      {showAuditAnalysis && (
+        <div className="p-3.5 rounded-xl bg-[#f8eed2]/60 border border-[#e5d9bd] space-y-2 text-xs">
+          <div className="font-bold text-[#3b110c] flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-[#8b372b]" />
+            <span>Product Audit Accounting Methodology</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[11px] text-[#5d3d3a]">
+            <div className="p-2.5 bg-[#ffffff] rounded-lg border border-[#e2d7c3] space-y-1">
+              <span className="font-bold text-[#3b110c] block">1. Session vs Detail Records</span>
+              <p className="leading-relaxed">
+                Telnyx Session Analysis reports aggregate conversational cost for the primary assistant leg. Carrier trunking and recording are billed as separate product CDR records.
+              </p>
+            </div>
+            <div className="p-2.5 bg-[#ffffff] rounded-lg border border-[#e2d7c3] space-y-1">
+              <span className="font-bold text-[#3b110c] block">2. Incomplete Charge Records</span>
+              <p className="leading-relaxed">
+                Calls flagged with &lsquo;P&rsquo; indicate recent calls whose Telnyx billing webhook arrived prior to rating finalization. They resolve automatically in the next sync pull.
+              </p>
+            </div>
+            <div className="p-2.5 bg-[#ffffff] rounded-lg border border-[#e2d7c3] space-y-1">
+              <span className="font-bold text-[#3b110c] block">3. Minimum Billable Increments</span>
+              <p className="leading-relaxed">
+                Telnyx rates voice legs in 60-second billing increments. Fractional calls (e.g. 15s) are rounded up to 60s, creating a slight duration delta with actual talk time.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product-by-Product Telnyx Audit Table (Compact and Matched with Theme) */}
+      <div className="rounded-xl bg-[#ffffff] border border-[#e7decb] p-3.5 sm:p-4 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[#3b110c] flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#8b372b]" />
-            Product-by-Product Telnyx Audit Table
-          </h3>
-          <span className="text-xs text-[#5d3d3a] font-mono">
-            {reconciliation.length} products verified
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-[#3b110c] flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-[#8b372b]" />
+              Product-by-Product Telnyx Audit Table
+            </h3>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#f8eed2] text-[#3b110c] font-bold border border-[#e2d7c3]">
+              {reconciliation.length} layers
+            </span>
+          </div>
+          <span className="text-[11px] text-[#7d6360] font-mono">
+            Currency: USD ($)
           </span>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <div className="overflow-x-auto -mx-3.5 sm:mx-0">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-[#e7decb] bg-[#f8eed2]/70 text-[#3b110c] font-mono text-[11px] uppercase tracking-wider">
-                <th className="py-2.5 px-3">Service Product</th>
-                <th className="py-2.5 px-3 text-right">Telnyx Usage Cost</th>
-                <th className="py-2.5 px-3 text-right">Priced Call Charges</th>
-                <th className="py-2.5 px-3 text-right">Delta / Variance</th>
-                <th className="py-2.5 px-3">Audit Status</th>
-                <th className="py-2.5 px-3">Explanation Note</th>
+              <tr className="border-b border-[#e7decb] bg-[#f8eed2] text-[#3b110c] font-mono text-[10px] uppercase tracking-wider font-bold">
+                <th className="py-2 px-3 font-sans">Service Product</th>
+                <th className="py-2 px-3 text-right">Telnyx Usage Cost</th>
+                <th className="py-2 px-3 text-right">Priced Call Charges</th>
+                <th className="py-2 px-3 text-right">Delta / Variance</th>
+                <th className="py-2 px-3">Audit Status</th>
+                <th className="py-2 px-3">Audit Explanation</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#ede5d5] font-mono">
+            <tbody className="divide-y divide-[#ede5d5] font-mono text-[11px]">
               {reconciliation.map((row, idx) => {
                 const isMatch = row.status === 'match';
                 const isDiscrepancy = row.status === 'discrepancy';
                 const isIncomplete = row.status === 'incomplete';
-                const isUsageReport = row.status === 'usage_report';
 
                 return (
                   <tr key={idx} className="hover:bg-[#faf8f2] transition-colors">
-                    <td className="py-3 px-3 font-semibold text-[#3b110c] font-sans">
+                    <td className="py-2 px-3 font-semibold text-[#3b110c] font-sans">
                       {row.label}
                     </td>
 
-                    <td className="py-3 px-3 text-right font-bold text-[#3b110c] tabular-nums">
+                    <td className="py-2 px-3 text-right font-bold text-[#3b110c] tabular-nums">
                       {row.telnyx_cost !== null ? `$${row.telnyx_cost.toFixed(4)}` : 'Unavailable'}
                     </td>
 
-                    <td className="py-3 px-3 text-right text-[#8b372b] font-bold tabular-nums">
+                    <td className="py-2 px-3 text-right text-[#8b372b] font-bold tabular-nums">
                       {row.local_priced_cost !== null ? `$${row.local_priced_cost.toFixed(4)}` : '—'}
                     </td>
 
-                    <td className={`py-3 px-3 text-right font-bold tabular-nums ${
-                      isDiscrepancy ? 'text-[#da1c1c]' : isMatch ? 'text-[#1f6f43]' : 'text-[#7d6360]'
-                    }`}>
+                    <td
+                      className={`py-2 px-3 text-right font-bold tabular-nums ${
+                        isDiscrepancy
+                          ? 'text-[#da1c1c]'
+                          : isMatch
+                          ? 'text-[#1f6f43]'
+                          : 'text-[#7d6360]'
+                      }`}
+                    >
                       {row.delta !== null
                         ? row.delta > 0
                           ? `+$${row.delta.toFixed(4)}`
@@ -102,9 +158,9 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                         : '—'}
                     </td>
 
-                    <td className="py-3 px-3">
+                    <td className="py-2 px-3">
                       <span
-                        className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                        className={`text-[9.5px] uppercase font-bold px-1.5 py-0.2 rounded ${
                           isMatch
                             ? 'bg-[#edf7f1] text-[#1f6f43] border border-[#a8dfc1]'
                             : isDiscrepancy
@@ -118,7 +174,7 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
                       </span>
                     </td>
 
-                    <td className="py-3 px-3 text-[#5d3d3a] font-sans text-xs">
+                    <td className="py-2 px-3 text-[#5d3d3a] font-sans text-[11px]">
                       {row.note}
                     </td>
                   </tr>

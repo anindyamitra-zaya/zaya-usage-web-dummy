@@ -14,11 +14,13 @@ import {
   Scale,
 } from 'lucide-react';
 import { TelnyxCall, CallStatus, CallDirection } from '../types';
+import { formatInTimezone } from '../utils/dashboardHelpers';
 
 interface CallLogsViewProps {
   calls: TelnyxCall[];
   onSelectCall: (call: TelnyxCall) => void;
   selectedAssistantId: string | null;
+  timezone?: string;
 }
 
 type SortField =
@@ -29,13 +31,13 @@ type SortField =
   | 'duration_sec'
   | 'billed_sec'
   | 'rate_per_min'
-  | 'recorded_cost'
-  | 'session_cost_total';
+  | 'recorded_cost';
 
 export const CallLogsView: React.FC<CallLogsViewProps> = ({
   calls,
   onSelectCall,
   selectedAssistantId,
+  timezone = 'UTC',
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -81,9 +83,6 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
       } else if (sortField === 'recorded_cost') {
         valA = a.recorded_cost ?? -1;
         valB = b.recorded_cost ?? -1;
-      } else if (sortField === 'session_cost_total') {
-        valA = a.session_cost_total ?? -1;
-        valB = b.session_cost_total ?? -1;
       }
 
       if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
@@ -130,14 +129,12 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
       'Assistant',
       'Direction',
       'Status',
-      'Started At (UTC)',
+      `Started At (${timezone})`,
       'Talk Time (sec)',
       'Billed Duration (sec)',
       'Billed Minutes',
       'Rate Per Minute ($)',
-      'Sum of Charges ($)',
-      'Telnyx Session Cost ($)',
-      'Cost Discrepancy ($)',
+      'Call Cost (Sum of Charges) ($)',
     ];
 
     const rows = sortedCalls.map((c) => [
@@ -146,14 +143,12 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
       `"${c.assistant_name}"`,
       c.direction,
       c.cost_status,
-      `"${c.started_at}"`,
+      `"${formatInTimezone(c.started_at, timezone)}"`,
       c.duration_sec !== null ? c.duration_sec : 'Unknown',
       c.billed_sec,
       (c.billed_sec / 60).toFixed(2),
       c.rate_per_min.toFixed(4),
       c.recorded_cost !== null ? c.recorded_cost.toFixed(4) : 'Pending',
-      c.session_cost_total !== null ? c.session_cost_total.toFixed(4) : 'N/A',
-      c.cost_discrepancy !== null ? c.cost_discrepancy.toFixed(4) : '0.0000',
     ]);
 
     const csvContent =
@@ -324,19 +319,6 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
                     <ChevronRight className="w-3.5 h-3.5 text-[#5d3d3a]" />
                   </div>
                 </div>
-
-                {/* Discrepancy indicator badge */}
-                {hasDiscrepancy && (
-                  <div className="p-1.5 rounded bg-[#faf8f2] border border-[#e7decb] text-[10px] font-mono flex items-center justify-between text-[#5d3d3a]">
-                    <span className="flex items-center gap-1 text-[#da1c1c] font-semibold">
-                      <Scale className="w-3 h-3" />
-                      Session Cost: ${call.session_cost_total?.toFixed(4)}
-                    </span>
-                    <span className="text-[#3b110c] font-bold">
-                      Sum of Charges: ${call.recorded_cost?.toFixed(4)}
-                    </span>
-                  </div>
-                )}
               </div>
             );
           })
@@ -421,21 +403,11 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
 
                 <th
                   onClick={() => handleHeaderSort('recorded_cost')}
-                  className="py-3 px-3 text-right cursor-pointer hover:bg-[#f1e6c5] transition-colors group"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:bg-[#f1e6c5] transition-colors group"
                 >
                   <span className="flex items-center justify-end">
-                    Sum of Charges
+                    Call Cost (Sum of Charges)
                     {renderSortIcon('recorded_cost')}
-                  </span>
-                </th>
-
-                <th
-                  onClick={() => handleHeaderSort('session_cost_total')}
-                  className="py-3 px-3 text-right cursor-pointer hover:bg-[#f1e6c5] transition-colors group"
-                >
-                  <span className="flex items-center justify-end">
-                    Telnyx Session Cost
-                    {renderSortIcon('session_cost_total')}
                   </span>
                 </th>
               </tr>
@@ -443,7 +415,7 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
             <tbody className="divide-y divide-[#ede5d5] font-mono">
               {paginatedCalls.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-[#7d6360] font-sans">
+                  <td colSpan={8} className="py-8 text-center text-[#7d6360] font-sans">
                     No calls found matching the query.
                   </td>
                 </tr>
@@ -452,7 +424,6 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
                   const min = call.duration_sec !== null ? Math.floor(call.duration_sec / 60) : 0;
                   const sec = call.duration_sec !== null ? call.duration_sec % 60 : 0;
                   const billedMin = (call.billed_sec / 60).toFixed(2);
-                  const isDiff = call.cost_discrepancy !== null && Math.abs(call.cost_discrepancy) > 0.0001;
 
                   return (
                     <tr
@@ -461,24 +432,30 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
                       title="Click row to inspect full Telnyx charge receipts and details"
                       className="hover:bg-[#f8eed2]/40 transition-colors cursor-pointer group"
                     >
-                      <td className="py-3 px-3.5 font-bold text-[#3b110c]">
+                      <td className="py-2.5 px-3 font-bold text-[#3b110c]">
                         <div className="text-xs group-hover:text-[#8b372b] transition-colors">
                           {call.telnyx_conversation_id}
                         </div>
-                        <div className="text-[10px] text-[#7d6360] font-sans font-normal">
-                          {call.started_at.split(' ')[1]} · {call.direction}
+                        <div className="text-[10px] text-[#7d6360] font-mono font-normal">
+                          {formatInTimezone(call.started_at, timezone, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}{' '}
+                          · {call.direction}
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 text-[#5d3d3a]">
+                      <td className="py-2.5 px-3 text-[#5d3d3a]">
                         {call.masked_caller || 'No caller ID'}
                       </td>
 
-                      <td className="py-3 px-3 text-[#3b110c] font-sans font-semibold">
+                      <td className="py-2.5 px-3 text-[#3b110c] font-sans font-semibold">
                         {call.assistant_name}
                       </td>
 
-                      <td className="py-3 px-3">
+                      <td className="py-2.5 px-3">
                         <span
                           className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
                             call.cost_status === 'recorded'
@@ -490,29 +467,20 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3 px-3 text-right text-[#5d3d3a] tabular-nums">
+                      <td className="py-2.5 px-3 text-right text-[#5d3d3a] tabular-nums">
                         {call.duration_sec !== null ? `${min}m ${sec < 10 ? `0${sec}` : sec}s` : '—'}
                       </td>
 
-                      <td className="py-3 px-3 text-right text-[#3b110c] font-bold tabular-nums">
+                      <td className="py-2.5 px-3 text-right text-[#3b110c] font-bold tabular-nums">
                         {billedMin} min
                       </td>
 
-                      <td className="py-3 px-3 text-right text-[#8b372b] font-bold tabular-nums">
+                      <td className="py-2.5 px-3 text-right text-[#8b372b] font-bold tabular-nums">
                         ${call.rate_per_min.toFixed(4)}/m
                       </td>
 
-                      <td className="py-3 px-3 text-right font-bold text-[#3b110c] tabular-nums">
+                      <td className="py-2.5 px-3 text-right font-bold text-[#3b110c] tabular-nums">
                         {call.recorded_cost !== null ? `$${call.recorded_cost.toFixed(4)}` : 'Pending'}
-                      </td>
-
-                      <td className={`py-3 px-3 text-right tabular-nums ${isDiff ? 'text-[#da1c1c] font-bold' : 'text-[#5d3d3a]'}`}>
-                        {call.session_cost_total !== null ? `$${call.session_cost_total.toFixed(4)}` : '—'}
-                        {isDiff && (
-                          <span className="block text-[9px] font-sans text-[#a05f1a] font-semibold">
-                            Δ ${Math.abs(call.cost_discrepancy || 0).toFixed(4)}
-                          </span>
-                        )}
                       </td>
                     </tr>
                   );
