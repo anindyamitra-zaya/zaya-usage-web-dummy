@@ -1,0 +1,8 @@
+{
+  "name": "Zaya Admin - Voice AI & Telephony Per-Minute Usage Dashboard",
+  "description": "Professional enterprise admin dashboard for tracking AI voice call usage, per-minute pricing composition (telephony, STT, LLM, TTS), and real-time operational metrics across mobile and desktop.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
