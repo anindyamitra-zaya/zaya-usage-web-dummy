@@ -27,25 +27,12 @@ export const ReconciliationView: React.FC<ReconciliationViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[#e7decb]">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#3b110c] bg-[#f8eed2] px-1.5 py-0.2 rounded border border-[#e2d7c3] font-bold">
-              CDR Audit Ledger
-            </span>
-            <span className="text-xs text-[#5d3d3a] font-mono">
-              Telnyx API Account Tie-Out
-            </span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[#3b110c] flex items-center gap-2">
-            <Scale className="w-5 h-5 text-[#8b372b]" />
-            Telnyx Account & CDR Cost Reconciliation
-          </h2>
-          <p className="text-xs text-[#5d3d3a]">
-            Auditing variance between account-wide Telnyx reports and aggregated call CDR line-items.
-          </p>
-        </div>
+      {/* Title - Single Heading Line */}
+      <div className="flex items-center justify-between gap-3 pb-2 border-b border-[#e7decb]">
+        <h2 className="text-base sm:text-lg font-bold text-[#3b110c] flex items-center gap-2">
+          <Scale className="w-4 h-4 text-[#8b372b]" />
+          Cost Reconciliation
+        </h2>
 
         <button
           onClick={() => setShowAuditAnalysis(!showAuditAnalysis)}

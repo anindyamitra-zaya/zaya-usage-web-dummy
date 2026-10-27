@@ -298,7 +298,7 @@ function buildTelnyxCalls(month = '2026-10'): TelnyxCall[] {
       assistant_name: assistant.name,
       clinic_name: assistant.name,
       clinic_code: clinicCode,
-      masked_caller: `•••${last4}`,
+      masked_caller: `+1 (312) 555-${last4}`,
       direction: 'inbound',
       duration_sec: omitDuration ? null : callSec,
       billed_sec: billedSec,

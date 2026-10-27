@@ -47,36 +47,19 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-[#e7decb]">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#3b110c] bg-[#f8eed2] px-2 py-0.2 rounded border border-[#e2d7c3] font-bold">
-              Telnyx Operations Console
-            </span>
-            <span className="text-xs text-[#5d3d3a] font-mono font-medium">
-              Live API Sync · {timezone}
-            </span>
-          </div>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#3b110c]">
-            {selectedAssistant ? selectedAssistant.name : 'All Telnyx Voice Assistants'}
-          </h1>
-          <p className="text-xs text-[#5d3d3a]">
-            {selectedAssistant
-              ? `Telnyx Assistant ID: ${selectedAssistant.telnyx_assistant_id} · Number: ${selectedAssistant.number}`
-              : `Aggregating ${assistants.length} production clinic receptionists`}
-          </p>
-        </div>
+      {/* Top Header - Single Heading Line */}
+      <div className="flex items-center justify-between gap-3 pb-2 border-b border-[#e7decb]">
+        <h1 className="text-base sm:text-lg font-bold text-[#3b110c] tracking-tight">
+          {selectedAssistant ? selectedAssistant.name : 'Voice Assistants Overview'}
+        </h1>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            onClick={() => onNavigateTab('reconciliation')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#fdf8f7] hover:bg-[#fdeeed] text-[#8b372b] border border-[#f0c2bd] transition-colors cursor-pointer shadow-2xs"
-          >
-            <Scale className="w-3.5 h-3.5" />
-            <span>Audit Cost Discrepancy &rarr;</span>
-          </button>
-        </div>
+        <button
+          onClick={() => onNavigateTab('reconciliation')}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#fdf8f7] hover:bg-[#fdeeed] text-[#8b372b] border border-[#f0c2bd] transition-colors cursor-pointer shrink-0 shadow-2xs"
+        >
+          <Scale className="w-3.5 h-3.5" />
+          <span>Audit Cost Discrepancy &rarr;</span>
+        </button>
       </div>
 
       {/* 1. Primary KPI Cards Strip */}

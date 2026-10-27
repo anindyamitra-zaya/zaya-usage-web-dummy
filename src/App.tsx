@@ -27,8 +27,8 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [selectedCall, setSelectedCall] = useState<TelnyxCall | null>(null);
 
-  // Timezone state (default UTC, selectable at bottom of sidebar)
-  const [timezone, setTimezone] = useState<string>('UTC');
+  // Timezone state (default CST as requested)
+  const [timezone, setTimezone] = useState<string>('America/Chicago');
 
   // Sidebar collapsible state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
@@ -41,11 +41,11 @@ export default function App() {
     enableAlerts: true,
   });
 
-  // Live Sync Engine (5 minutes configurable interval)
+  // Live Sync Engine (5 minutes configurable interval, initialized to CST)
   const [syncConfig, setSyncConfig] = useState<SyncConfig>({
     intervalMinutes: 5,
     autoSyncEnabled: true,
-    lastSyncAt: `${formatTimeInTimezone(new Date(), 'UTC')} UTC`,
+    lastSyncAt: `${formatTimeInTimezone(new Date(), 'America/Chicago')} CST`,
     nextSyncSeconds: 300,
     isSyncing: false,
     syncRunCount: 1,
@@ -80,7 +80,12 @@ export default function App() {
     }
 
     setTimeout(() => {
-      const tzLabel = timezone === 'UTC' ? 'UTC' : timezone.split('/')[1]?.replace('_', ' ') || timezone;
+      const tzLabel =
+        timezone === 'America/Chicago'
+          ? 'CST'
+          : timezone === 'UTC'
+          ? 'UTC'
+          : timezone.split('/')[1]?.replace('_', ' ') || timezone;
       const formattedTime = `${formatTimeInTimezone(new Date(), timezone)} ${tzLabel}`;
       setSyncConfig((prev) => ({
         ...prev,
@@ -138,7 +143,12 @@ export default function App() {
 
   const handleTimezoneChange = (newTz: string) => {
     setTimezone(newTz);
-    const tzLabel = newTz === 'UTC' ? 'UTC' : newTz.split('/')[1]?.replace('_', ' ') || newTz;
+    const tzLabel =
+      newTz === 'America/Chicago'
+        ? 'CST'
+        : newTz === 'UTC'
+        ? 'UTC'
+        : newTz.split('/')[1]?.replace('_', ' ') || newTz;
     setSyncConfig((prev) => ({
       ...prev,
       lastSyncAt: `${formatTimeInTimezone(new Date(), newTz)} ${tzLabel}`,
@@ -146,8 +156,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbf9f4] text-[#2e1d1a] flex flex-col font-sans selection:bg-[#8b372b]/20 selection:text-[#3b110c]">
-      {/* Top Header */}
+    <div className="h-screen max-h-screen overflow-hidden bg-[#fbf9f4] text-[#2e1d1a] flex flex-col font-sans selection:bg-[#8b372b]/20 selection:text-[#3b110c]">
+      {/* Top Header - fixed height */}
       <Header
         assistants={TELNYX_ASSISTANTS}
         selectedAssistantId={selectedAssistantId}
@@ -158,9 +168,9 @@ export default function App() {
         totalCalls={metrics.kpis.call_count}
       />
 
-      {/* Main Workspace: Fixed & Collapsible Sidebar + Compact Viewport */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto relative">
-        {/* Fixed, Non-Scrollable, Collapsible Sidebar with Live Sync and Timezone at Bottom */}
+      {/* Main Workspace: Immobile locked layout, zero whole-page scrolling */}
+      <div className="flex-1 flex max-w-7xl w-full mx-auto overflow-hidden relative">
+        {/* Fixed, Strictly Non-Scrollable, Collapsible Sidebar with Live Sync and Timezone at Bottom */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -176,8 +186,8 @@ export default function App() {
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
 
-        {/* Main Content Viewport (Compact layout, no scroll in sidebar) */}
-        <main className="flex-1 p-3 sm:p-5 pb-20 md:pb-6 overflow-y-auto max-w-full space-y-4">
+        {/* Main Content Viewport (The ONLY container with vertical scrolling) */}
+        <main className="flex-1 p-3 sm:p-5 pb-20 md:pb-6 overflow-y-auto max-w-full space-y-4 h-full">
           {/* Active Tab View */}
           {activeTab === 'overview' && (
             <OverviewView

@@ -79,26 +79,50 @@ export const BillingView: React.FC<BillingViewProps> = ({
   };
 
   const handleExportStatement = () => {
-    alert(`Exporting Telnyx billing tie-out statement for ${metrics.month} (CSV format)`);
+    const headers = [
+      'Client Name',
+      'Assistant Name',
+      'Phone Number',
+      'Billed Minutes',
+      'Usage Cost',
+      'Monthly Number Fee',
+      'Total Client Cost',
+    ];
+    const rows = statements.map((c) => [
+      `"${c.clientName}"`,
+      `"${c.assistantName}"`,
+      c.number,
+      c.billedMinutes.toFixed(1),
+      c.totalCost.toFixed(4),
+      c.fixedPhoneFee.toFixed(2),
+      (c.totalCost + c.fixedPhoneFee).toFixed(4),
+    ]);
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `telnyx_billing_statement_${metrics.month}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#e7decb]">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#3b110c] flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-[#8b372b]" />
-            Telnyx Client Billing Statements & Account Tie-Out
-          </h2>
-          <p className="text-xs sm:text-sm text-[#5d3d3a] mt-0.5">
-            Sum of client receptionist usage compared with Telnyx account totals. Fixed phone-number fees are added separately.
-          </p>
-        </div>
+    <div className="space-y-4">
+      {/* Title - Single Heading Line */}
+      <div className="flex items-center justify-between gap-3 pb-2 border-b border-[#e7decb]">
+        <h2 className="text-base sm:text-lg font-bold text-[#3b110c] flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-[#8b372b]" />
+          Client Billing Statements & Tie-Out
+        </h2>
 
         <button
           onClick={handleExportStatement}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#ffffff] hover:bg-[#faf8f2] text-[#3b110c] border border-[#dcd3c1] transition-colors cursor-pointer self-start sm:self-auto shrink-0 shadow-2xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#ffffff] hover:bg-[#faf8f2] text-[#3b110c] border border-[#dcd3c1] transition-colors cursor-pointer shrink-0 shadow-2xs"
         >
           <Download className="w-3.5 h-3.5 text-[#8b372b]" />
           <span>Export Billing CSV</span>

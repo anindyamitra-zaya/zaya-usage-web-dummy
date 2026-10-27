@@ -166,17 +166,12 @@ export const CallLogsView: React.FC<CallLogsViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#e7decb]">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#3b110c] flex items-center gap-2">
-            <PhoneCall className="w-6 h-6 text-[#8b372b]" />
-            Telnyx Call Detail Records (CDR) & Per-Minute Rates
-          </h2>
-          <p className="text-xs sm:text-sm text-[#5d3d3a] mt-0.5">
-            Click any column header to sort. Click any row to view full itemized Telnyx charge receipts and discrepancy analysis.
-          </p>
-        </div>
+      {/* Header - Single Heading Line */}
+      <div className="flex items-center justify-between gap-3 pb-2 border-b border-[#e7decb]">
+        <h2 className="text-base sm:text-lg font-bold text-[#3b110c] flex items-center gap-2">
+          <PhoneCall className="w-4 h-4 text-[#8b372b]" />
+          Call Detail Records (CDR)
+        </h2>
 
         {/* Quick summary & CSV export */}
         <div className="flex items-center gap-3">

@@ -77,12 +77,12 @@ export const TelnyxAnalyticsGrid: React.FC<TelnyxAnalyticsGridProps> = ({
       {/* Header and View Selector matching theme */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-xs sm:text-sm font-bold text-[#3b110c] flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-[#8b372b]" />
-              Telnyx API Telephony Intelligence & Decomposition
+              <Activity className="w-4 h-4 text-[#8b372b] shrink-0" />
+              <span>Telnyx API Telephony Intelligence &amp; Decomposition</span>
             </h3>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#f8eed2] text-[#8b372b] font-bold border border-[#e2d7c3]">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#f8eed2] text-[#8b372b] font-bold border border-[#e2d7c3] shrink-0">
               Real-Time Feed
             </span>
           </div>
@@ -153,32 +153,42 @@ export const TelnyxAnalyticsGrid: React.FC<TelnyxAnalyticsGridProps> = ({
           </div>
 
           {/* Cards for each layer */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-            {productBreakdown.map((item, idx) => (
-              <div
-                key={idx}
-                className="p-2.5 rounded-lg bg-[#faf8f2] border border-[#ede5d5] space-y-1 text-xs"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="font-semibold text-[#3b110c] truncate text-[11px]">
-                    {item.name}
-                  </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-2.5 pt-1">
+            {productBreakdown.map((item, idx) => {
+              const effectiveRate = item.cost / (calls.reduce((acc, c) => acc + c.billed_sec / 60, 0) || 1);
+              return (
+                <div
+                  key={idx}
+                  className="min-w-0 p-2.5 rounded-lg bg-[#faf8f2] border border-[#ede5d5] flex flex-col justify-between space-y-1.5 text-xs shadow-2xs hover:border-[#d7ccb8] transition-colors"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0" title={item.name}>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="font-semibold text-[#3b110c] truncate text-[11px] sm:text-xs">
+                      {item.name}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between gap-1 min-w-0">
+                    <span className="text-sm sm:text-base font-bold font-mono text-[#3b110c] tabular-nums truncate">
+                      ${item.cost.toFixed(4)}
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#f3ede0] text-[#7d6360] font-medium shrink-0">
+                      {item.percentage}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[#7d6360] pt-1 border-t border-[#ede5d5]/80 min-w-0">
+                    <span className="text-[9px] text-[#9b8380] uppercase tracking-wider shrink-0">Rate</span>
+                    <span className="font-medium text-[#5d3d3a] whitespace-nowrap tabular-nums">
+                      {effectiveRate.toFixed(4)}/m
+                    </span>
+                  </div>
                 </div>
-                <div className="text-sm font-bold font-mono text-[#3b110c] tabular-nums">
-                  ${item.cost.toFixed(4)}
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-[#7d6360]">
-                  <span>{item.percentage}%</span>
-                  <span>
-                    {(item.cost / (calls.reduce((acc, c) => acc + c.billed_sec / 60, 0) || 1)).toFixed(4)}/m
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Metadata banner */}
